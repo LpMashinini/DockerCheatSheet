@@ -1,0 +1,52 @@
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: thinkboard-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - thinkboard-network
+
+  backend:
+    build: ./backend
+    container_name: thinkboard-backend
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/thinkboard
+      - PORT=5001
+      - NODE_ENV=development
+    depends_on:
+      - mongodb
+    networks:
+      - thinkboard-network
+    volumes:
+      - ./backend:/server
+      - /server/node_modules
+
+  frontend:
+    build: ./frontend
+    container_name: thinkboard-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://backend:5001/api
+    depends_on:
+      - backend
+    networks:
+      - thinkboard-network
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  mongodb_data:
+
+networks:
+  thinkboard-network:
+    driver: bridge
